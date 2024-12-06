@@ -2,17 +2,16 @@ Sure! Here’s a cool and engaging README for your GitHub project:
 
 ---
 
-# **c2dploy - The CTF Deployment Wizard**
+# **c2dploy - From c file to docker container**
 
-**c2dploy** is your go-to deployment tool for CTF challenges. This script takes care of all the tedious setup, allowing you to focus on creating epic challenges! It automates the creation of a deployable CTF environment, including a custom Docker setup, compiled binaries, and challenge configurations.
-
-Whether you're creating a buffer overflow challenge or a reverse-engineering puzzle, **c2dploy** gets you up and running with minimal effort. Just provide your C file and flag, and let it do the magic.
+**c2dploy** is script that allows you to go from your c programmed challenge to a docker container in 1 step. 
+Whether you're creating a pwn challenge or a reverse-engineering puzzle, **c2dploy** gets you up and running with minimal effort. Just provide your C file and flag, and let it do the magic.
 
 ---
 
 ## **Features**
 
-- **Automated Deployment Structure**: Generates a structured directory with both public and private files, ready for CTF deployment.
+- **Handles compilation with protections**: Allows you to choose what protections you want your file to be compiled with.
 - **Docker Integration**: Prepares a `Dockerfile`, `docker-compose.yml`, and necessary configurations to deploy the challenge in a containerized environment.
 - **ASLR & Security Checks**: Verifies that the system is set up correctly (ASLR disabled) and ensures the C file includes the necessary setup.
 - **Flag Handling**: Automatically inserts a flag into the binary or uses a flag file, based on user input.
@@ -29,7 +28,7 @@ git clone https://github.com/yourusername/c2dploy.git
 cd c2dploy
 ```
 
-Ensure you have **Docker** and **Docker Compose** installed to build and deploy your challenge.
+Ensure you have **Docker**, **Docker Compose** and **zip** installed to build and deploy your challenge.
 
 ---
 
@@ -52,7 +51,7 @@ Run the `c2dploy` script with the following syntax:
 1. With a separate flag file:
 
 ```bash
-./c2dploy challenge.c FLAG{this_is_the_flag} -f
+./c2dploy -f challenge.c FLAG{this_is_the_flag}
 ```
 
 2. With the flag embedded in the binary:
@@ -65,35 +64,10 @@ Run the `c2dploy` script with the following syntax:
 
 ## **How It Works**
 
-1. **Directory Structure**: The script creates an output folder with two subdirectories:
-   - `public`: Contains the compiled binary and any other publicly accessible files.
+**Directory Structure**: The script creates an output folder with two subdirectories:
+   - `public`: Contains the compiled binary (in case the flag is in the binary, this binary will be compiled with a fake flag) and any other publicly accessible files.
    - `private`: Contains Docker configurations, flag files (if applicable), and service setup files.
 
-2. **Compilation**: It compiles the C file with the following flags to disable security features (e.g., stack protector, PIE):
-   ```bash
-   gcc <file.c> -o <binary_name> -no-pie -fno-stack-protector
-   ```
-
-3. **Docker Setup**:
-   - The `Dockerfile` is generated dynamically with your challenge's name and flags.
-   - `docker-compose.yml` allows for easy container deployment.
-
-4. **xinetd Service**:
-   - Configures `xinetd` to run your challenge on the specified port.
-   - The `entrypoint.sh` file ensures the environment is correctly initialized.
-
----
-
-## **Docker Deployment**
-
-Once the challenge files are generated, you can deploy the challenge by navigating to the `private` directory and running the following:
-
-```bash
-cd private
-./deploy_challenge.sh
-```
-
-This will bring up the challenge in a Docker container, listening on the port you specified.
 
 ---
 
@@ -101,6 +75,24 @@ This will bring up the challenge in a Docker container, listening on the port yo
 
 Here's what the output directory will look like:
 
+
+flag in binary:
+```
+my_challenge_deploy/
+├── public/
+│   └── my_challenge_fake_flag (compiled binary)
+│   └── my_challenge_fake_flag.c
+└── private/
+    ├── Dockerfile
+    ├── docker-compose.yml
+    ├── deploy_challenge.sh
+    ├── entrypoint.sh
+    ├── my_challenge_with_flag
+    └── ctf.xinetd
+```
+
+
+flag *not* in binary:
 ```
 my_challenge_deploy/
 ├── public/
@@ -110,9 +102,11 @@ my_challenge_deploy/
     ├── docker-compose.yml
     ├── deploy_challenge.sh
     ├── entrypoint.sh
+    ├── my_challenge
     ├── flag.txt
     └── ctf.xinetd
 ```
+
 
 ---
 
