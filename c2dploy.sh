@@ -23,7 +23,7 @@ PRIVATE_DIR="${OUTPUT_DIR}/private"
 FAKE_FLAG="FLAG{FAKEFLAG}"
 
 # Ask for the deployment port
-read -p "Enter the port to deploy the service: " DEPLOY_PORT
+read -p "[+] Enter the port to deploy the service: " DEPLOY_PORT
 
 # Check if ASLR is disabled
 if [ "$(cat /proc/sys/kernel/randomize_va_space)" -ne 0 ]; then
@@ -46,17 +46,18 @@ mkdir -p "$PUBLIC_DIR" "$PRIVATE_DIR"
 # ________________________________________________________________ Compilation Flags _______________________________________________________
 
 # Display menu and collect choices
-echo "Select protections to deactivate (enter numbers separated by spaces, e.g., '1 3 6'):"
-echo "1) Canary"
-echo "2) NX Support"
-echo "3) PIE Support"
-echo "4) No RPATH"
-echo "5) No RUNPATH"
-echo "6) Partial RelRO"
-echo "7) Full RelRO"
-echo "8) Disable All Protections"
-echo "9) Keep All Protections (default)"
-read -p "Enter your choices: " choices
+echo "[+] Select protections to deactivate (enter numbers separated by spaces, e.g., '1 3 6'):"
+echo "	1) Canary"
+echo "	2) NX Support"
+echo "	3) PIE Support"
+echo "	4) No RPATH"
+echo "	5) No RUNPATH"
+echo "	6) Partial RelRO"
+echo "	7) Full RelRO"
+echo "	8) Disable All Protections"
+echo "	9) Keep All Protections (default)"
+read -p " -> Enter your choices: " choices
+echo " "
 
 # Set default protections
 CANARY="Yes"
@@ -92,13 +93,15 @@ if [[ -n "$choices" ]]; then
 fi
 
 # Show final protection states
-echo "Final protection states:"
-echo "Canary:                 $CANARY"
-echo "NX Support:             $NX"
-echo "PIE Support:            $PIE"
-echo "No RPATH:               $RPATH"
-echo "No RUNPATH:             $RUNPATH"
-echo "RelRO (Partial/Full):   $RELRO"
+echo "[+] Final protection states:"
+echo "	Canary:                 $CANARY"
+echo "	NX Support:             $NX"
+echo "	PIE Support:            $PIE"
+echo "	No RPATH:               $RPATH"
+echo "	No RUNPATH:             $RUNPATH"
+echo "	RelRO (Partial/Full):   $RELRO"
+echo " "
+echo " "
 
 # Determine flags based on selections
 CFLAGS=""
@@ -117,19 +120,27 @@ fi
 
 #__________________________________________________________________________________________________________________
 
-# Compile the source file
-gcc "$CFILE" -o "${OUTPUT_DIR}/${BASENAME}" $CFLAGS
-if [ $? -ne 0 ]; then
-    echo "Compilation failed. Exiting."
-    exit 5
-fi
-
 
 
 # Prepare the C file based on the mode
 if [ "$FORCE_FLAG" = true ]; then
+    # Compile the source file
+    gcc "$CFILE" -o "${OUTPUT_DIR}/${BASENAME}" $CFLAGS
+    if [ $? -ne 0 ]; then
+	echo "Compilation failed. Exiting."
+	exit 5
+    fi
     echo "$FLAG" > "${PRIVATE_DIR}/flag.txt"
 else
+
+    sed -i "s/FLAG *= *\".*\";/FLAG = \"$FLAG\";/" "$CFILE"
+    gcc "$CFILE" -o "${PRIVATE_DIR}/${BASENAME}" $CFLAGS
+    if [ $? -ne 0 ]; then
+	echo "Compilation failed. Exiting."
+	exit 5
+    fi
+
+
     # Modify the C file to include the fake flag
     TEMP_CFILE="${PUBLIC_DIR}/${BASENAME}_modified.c"
     cp "$CFILE" "$TEMP_CFILE"
@@ -142,7 +153,10 @@ else
         exit 5
     fi
     # No flag file is required in this mode
-    echo "Flag embedded in binary as: $FAKE_FLAG"
+    echo "[+] Fake flag embedded in binary as: $FAKE_FLAG in ${PUBLIC_DIR}/${BASENAME}"
+    echo " "
+    echo "[+] Flag embedded in binary as: $FLAG in ${PRIVATE_DIR}/${BASENAME}"
+    echo " "
 fi
 
 # Add ctf.xinetd with dynamic port
@@ -217,9 +231,14 @@ sleep infinity;
 EOF
 chmod +x "${PRIVATE_DIR}/entrypoint.sh"
 
+echo "Zipping: "
+zip -r ${OUTPUT_DIR}/${BASENAME} ${PRIVATE_DIR}
+echo " "
+
+echo "[+] Docker zip created in ${OUTPUT_DIR}"
+echo " "
+
 # Final message
 echo "Deployment structure created in: $OUTPUT_DIR"
 echo "Service will be deployed on port: $DEPLOY_PORT"
-if [ "$FORCE_FLAG" = false ]; then
-    echo "The binary has the fake flag embedded as: $FAKE_FLAG"
-fi
+
