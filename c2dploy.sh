@@ -1,5 +1,30 @@
 #!/bin/bash
 
+# Function to display the menu
+display_menu() {
+    echo "Select protections to deactivate (toggle options by entering their number):"
+    echo "1) Canary:                 $CANARY"
+    echo "2) NX Support:             $NX"
+    echo "3) PIE Support:            $PIE"
+    echo "4) No RPATH:               $RPATH"
+    echo "5) No RUNPATH:             $RUNPATH"
+    echo "6) RelRO (Partial/Full):   $RELRO"
+    echo "7) Done"
+}
+
+# Function to toggle options
+toggle_option() {
+    case $1 in
+        1) CANARY=$( [ "$CANARY" == "Yes" ] && echo "No" || echo "Yes" );;
+        2) NX=$( [ "$NX" == "Yes" ] && echo "No" || echo "Yes" );;
+        3) PIE=$( [ "$PIE" == "Yes" ] && echo "No" || echo "Yes" );;
+        4) RPATH=$( [ "$RPATH" == "Yes" ] && echo "No" || echo "Yes" );;
+        5) RUNPATH=$( [ "$RUNPATH" == "Yes" ] && echo "No" || echo "Yes" );;
+        6) RELRO=$( [ "$RELRO" == "Yes" ] && echo "No" || echo "Yes" );;
+        *) echo "Invalid option, try again.";;
+    esac
+}
+
 # Check for correct arguments
 if [ "$#" -lt 2 ]; then
     echo "Usage: $0 [-f] <file.c> <flag>"
@@ -43,11 +68,45 @@ fi
 # Create directory structure
 mkdir -p "$PUBLIC_DIR" "$PRIVATE_DIR"
 
-gcc "$CFILE" -o "${PRIVATE_DIR}/${BASENAME}" -no-pie -fno-stack-protector
-if [ $? -ne 0 ]; then
-	echo "Compilation failed. Exiting."
-	exit 5
+CANARY="Yes"
+NX="Yes"
+PIE="Yes"
+RPATH="Yes"
+RUNPATH="Yes"
+RELRO="Yes"
+
+# Menu loop
+while true; do
+    display_menu
+    read -p "Enter your choice: " choice
+    if [ "$choice" == "7" ]; then
+        break
+    fi
+    toggle_option $choice
+done
+
+# Determine flags based on selections
+CFLAGS=""
+[ "$CANARY" == "No" ] && CFLAGS="$CFLAGS -fno-stack-protector"
+[ "$NX" == "No" ] && CFLAGS="$CFLAGS -z execstack"
+[ "$PIE" == "No" ] && CFLAGS="$CFLAGS -no-pie"
+[ "$RPATH" == "No" ] && CFLAGS="$CFLAGS -Wl,--disable-new-dtags"
+[ "$RUNPATH" == "No" ] && CFLAGS="$CFLAGS -Wl,--disable-new-dtags"
+if [ "$RELRO" == "No" ]; then
+    CFLAGS="$CFLAGS -Wl,-z,norelro"
+elif [ "$RELRO" == "Partial" ]; then
+    CFLAGS="$CFLAGS -Wl,-z,relro"
+else
+    CFLAGS="$CFLAGS -Wl,-z,relro -Wl,-z,now"
 fi
+
+# Compile the source file
+gcc "$CFILE" -o "${OUTPUT_DIR}/${BASENAME}" $CFLAGS
+if [ $? -ne 0 ]; then
+    echo "Compilation failed. Exiting."
+    exit 5
+fi
+
 
 
 # Prepare the C file based on the mode
