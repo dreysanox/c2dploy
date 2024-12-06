@@ -1,5 +1,3 @@
-Sure! Here’s a cool and engaging README for your GitHub project:
-
 ---
 
 # **c2dploy - From c file to docker container**
