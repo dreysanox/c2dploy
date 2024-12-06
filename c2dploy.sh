@@ -28,12 +28,12 @@ read -p "Enter the port to deploy the service: " DEPLOY_PORT
 # Check if ASLR is disabled
 if [ "$(cat /proc/sys/kernel/randomize_va_space)" -ne 0 ]; then
     echo "Error: ASLR is not disabled. Please disable it by executing this command with sudo user:"
-    echo "echo 0 | /proc/sys/kernel/randomize_va_space"
+    echo "echo 0 | tee /proc/sys/kernel/randomize_va_space"
     exit 3
 fi
 
 # Check if the C file contains the required line
-REQUIRED_LINE=" setvbuf(stdout, NULL, _IONBF, 0); "
+REQUIRED_LINE="setvbuf(stdout, NULL, _IONBF, 0);"
 if ! grep -q "$REQUIRED_LINE" "$CFILE"; then
     echo "Please set the standard output buffer mode for stdout to unbuffered by including this in your main function:"
     echo "$REQUIRED_LINE"
@@ -43,15 +43,15 @@ fi
 # Create directory structure
 mkdir -p "$PUBLIC_DIR" "$PRIVATE_DIR"
 
+gcc "$CFILE" -o "${PRIVATE_DIR}/${BASENAME}" -no-pie -fno-stack-protector
+if [ $? -ne 0 ]; then
+	echo "Compilation failed. Exiting."
+	exit 5
+fi
+
+
 # Prepare the C file based on the mode
 if [ "$FORCE_FLAG" = true ]; then
-    # Compile with the flag as a separate file
-    gcc "$CFILE" -o "${PUBLIC_DIR}/${BASENAME}" -no-pie -fno-stack-protector
-    if [ $? -ne 0 ]; then
-        echo "Compilation failed. Exiting."
-        exit 5
-    fi
-    # Prepare the private directory with the flag file
     echo "$FLAG" > "${PRIVATE_DIR}/flag.txt"
 else
     # Modify the C file to include the fake flag
