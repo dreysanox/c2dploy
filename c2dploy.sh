@@ -134,7 +134,7 @@ if [ "$FORCE_FLAG" = true ]; then
 else
 
     sed -i "s/FLAG *= *\".*\";/FLAG = \"$FLAG\";/" "$CFILE"
-    gcc "$CFILE" -o "${PRIVATE_DIR}/${BASENAME}" $CFLAGS
+    gcc "$CFILE" -o "${PRIVATE_DIR}/${BASENAME}_real_flag" $CFLAGS
     if [ $? -ne 0 ]; then
 	echo "Compilation failed. Exiting."
 	exit 5
@@ -142,12 +142,12 @@ else
 
 
     # Modify the C file to include the fake flag
-    TEMP_CFILE="${PUBLIC_DIR}/${BASENAME}_modified.c"
+    TEMP_CFILE="${PUBLIC_DIR}/${BASENAME}_fake_flag.c"
     cp "$CFILE" "$TEMP_CFILE"
     sed -i "s/FLAG *= *\".*\";/FLAG = \"$FAKE_FLAG\";/" "$TEMP_CFILE"
 
     # Compile the modified C file
-    gcc "$TEMP_CFILE" -o "${PUBLIC_DIR}/${BASENAME}" $CFLAGS
+    gcc "$TEMP_CFILE" -o "${PUBLIC_DIR}/${BASENAME}_fake_flag" $CFLAGS
     if [ $? -ne 0 ]; then
         echo "Compilation of modified C file failed. Exiting."
         exit 5
