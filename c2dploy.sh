@@ -125,7 +125,8 @@ fi
 # Prepare the C file based on the mode
 if [ "$FORCE_FLAG" = true ]; then
     # Compile the source file
-    gcc "$CFILE" -o "${OUTPUT_DIR}/${BASENAME}" $CFLAGS
+    gcc "$CFILE" -o "${PRIVATE_DIR}/${BASENAME}" $CFLAGS
+    cp "${PRIVATE_DIR}/${BASENAME}" "${PUBLIC_DIR}/${BASENAME}"
     if [ $? -ne 0 ]; then
 	echo "Compilation failed. Exiting."
 	exit 5
