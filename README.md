@@ -1,7 +1,7 @@
 
 ---
 
-# **c2dploy - From c file to docker container**
+# **c2dploy - From challenge.c to docker container in one ./**
 
 **c2dploy** is script that allows you to go from your c programmed challenge to a docker container in 1 step. 
 Whether you're creating a pwn challenge or a reverse-engineering puzzle, **c2dploy** gets you up and running with minimal effort. Just provide your C file and flag, and let it do the magic.
