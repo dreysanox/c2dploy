@@ -119,7 +119,7 @@ else
     sed -i "s/FLAG *= *\".*\";/FLAG = \"$FAKE_FLAG\";/" "$TEMP_CFILE"
 
     # Compile the modified C file
-    gcc "$TEMP_CFILE" -o "${PUBLIC_DIR}/${BASENAME}" -no-pie -fno-stack-protector
+    gcc "$TEMP_CFILE" -o "${PUBLIC_DIR}/${BASENAME}" $CFLAGS
     if [ $? -ne 0 ]; then
         echo "Compilation of modified C file failed. Exiting."
         exit 5
