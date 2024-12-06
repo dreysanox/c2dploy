@@ -1,30 +1,5 @@
 #!/bin/bash
 
-# Function to display the menu
-display_menu() {
-    echo "Select protections to deactivate (toggle options by entering their number):"
-    echo "1) Canary:                 $CANARY"
-    echo "2) NX Support:             $NX"
-    echo "3) PIE Support:            $PIE"
-    echo "4) No RPATH:               $RPATH"
-    echo "5) No RUNPATH:             $RUNPATH"
-    echo "6) RelRO (Partial/Full):   $RELRO"
-    echo "7) Done"
-}
-
-# Function to toggle options
-toggle_option() {
-    case $1 in
-        1) CANARY=$( [ "$CANARY" == "Yes" ] && echo "No" || echo "Yes" );;
-        2) NX=$( [ "$NX" == "Yes" ] && echo "No" || echo "Yes" );;
-        3) PIE=$( [ "$PIE" == "Yes" ] && echo "No" || echo "Yes" );;
-        4) RPATH=$( [ "$RPATH" == "Yes" ] && echo "No" || echo "Yes" );;
-        5) RUNPATH=$( [ "$RUNPATH" == "Yes" ] && echo "No" || echo "Yes" );;
-        6) RELRO=$( [ "$RELRO" == "Yes" ] && echo "No" || echo "Yes" );;
-        *) echo "Invalid option, try again.";;
-    esac
-}
-
 # Check for correct arguments
 if [ "$#" -lt 2 ]; then
     echo "Usage: $0 [-f] <file.c> <flag>"
@@ -68,22 +43,62 @@ fi
 # Create directory structure
 mkdir -p "$PUBLIC_DIR" "$PRIVATE_DIR"
 
+# ________________________________________________________________ Compilation Flags _______________________________________________________
+
+# Display menu and collect choices
+echo "Select protections to deactivate (enter numbers separated by spaces, e.g., '1 3 6'):"
+echo "1) Canary"
+echo "2) NX Support"
+echo "3) PIE Support"
+echo "4) No RPATH"
+echo "5) No RUNPATH"
+echo "6) Partial RelRO"
+echo "7) Full RelRO"
+echo "8) Disable All Protections"
+echo "9) Keep All Protections (default)"
+read -p "Enter your choices: " choices
+
+# Set default protections
 CANARY="Yes"
 NX="Yes"
 PIE="Yes"
 RPATH="Yes"
 RUNPATH="Yes"
-RELRO="Yes"
+RELRO="Partial"
 
-# Menu loop
-while true; do
-    display_menu
-    read -p "Enter your choice: " choice
-    if [ "$choice" == "7" ]; then
-        break
-    fi
-    toggle_option $choice
-done
+# Update protections based on user input
+if [[ -n "$choices" ]]; then
+    for choice in $choices; do
+        case $choice in
+            1) CANARY="No";;
+            2) NX="No";;
+            3) PIE="No";;
+            4) RPATH="No";;
+            5) RUNPATH="No";;
+            6) RELRO="Partial";;
+            7) RELRO="No";;
+            8)  # Disable all protections
+                CANARY="No"
+                NX="No"
+                PIE="No"
+                RPATH="No"
+                RUNPATH="No"
+                RELRO="No"
+                ;;
+            9) break;;  # Keep all protections
+            *) echo "Invalid choice: $choice";;
+        esac
+    done
+fi
+
+# Show final protection states
+echo "Final protection states:"
+echo "Canary:                 $CANARY"
+echo "NX Support:             $NX"
+echo "PIE Support:            $PIE"
+echo "No RPATH:               $RPATH"
+echo "No RUNPATH:             $RUNPATH"
+echo "RelRO (Partial/Full):   $RELRO"
 
 # Determine flags based on selections
 CFLAGS=""
@@ -99,6 +114,8 @@ elif [ "$RELRO" == "Partial" ]; then
 else
     CFLAGS="$CFLAGS -Wl,-z,relro -Wl,-z,now"
 fi
+
+#__________________________________________________________________________________________________________________
 
 # Compile the source file
 gcc "$CFILE" -o "${OUTPUT_DIR}/${BASENAME}" $CFLAGS
